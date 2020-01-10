@@ -1,0 +1,481 @@
+Master components :
+
+Master provides cluster control panel.
+Kube-apiserver : Its a gatekeeper of whole cluster. frontend for k8s cluster.
+Etcd : key value store for backing all cluster data.
+Kube scheduler : It wathces newly created pods and select a node for them to run on.
+Kube control manager : mantains overall health of k8s cluster.
+node controller
+replicaiton controller
+endpoints controleer
+server account and token contollers
+
+Cloud controllers :: run controllers that interact with underlysing cloud providers.
+
+
+Node components :
+KUbelet : An agent that runs on each node in the cluster. It makes sure that containers are running in a pod. if a container fails it tries to restart it on same node.
+Kube proxy : kube-proxy maintains network rules on nodes. These network rules allow network communication to your Pods from network sessions inside or outside of your cluster.
+Container runtime : The container runtime is the software that is responsible for running containers.
+
+
+Deployments represent a set of multiple, identical Pods with no unique identities. A Deployment runs multiple replicas of your application and automatically replaces any instances that fail or become unresponsive
+
+Replica Sets are a level above pods that ensures a certain number of pods are always running.
+
+Replica Set use Set-Based selectors while replication controllers use Equity-Based selectors
+
+Bucket policies are applied to Buckets in S3, where as IAM policies are assigned to user/groups/roles 
+and are used to govern access to any AWS resource through the IAM service.
+ACLs allow you to set certain permissions on each individual object within a specific Bucket. Again, access will always be granted on a least privileged condition
+if conflicts exist between ACLs, Bucket Polices and IAM Policies.
+
+*********************************************************************************************************************************************
+
+
+Diff between Physical server,VMware and container and featurues of container orachestration engine(COE)
+--------------------------------------------------------------------------------------------------------
+In physical server there is one server having os and one application installed.
+In VMWare have one physical server - hypervisor/vmware esx - VM (here each VM has its OS on which applicaiton is isntalled.) But each OS takes cpu,memory i.e. 30% of VM resources 
+utilized to run OS and we need Licenses for each OS. Also lot of cost is paid to setup VMWare and its license and administration. this all is overcome in container.
+Contianer : Container virtialises at OS level. Means a single OS and have mutliple containers. Takes fraction of memory and cpu.Boots up very fast and are very light.
+
+IN simple terms, Vmware virtualises hardware and contianer virtualises OS. They both are to used togather. Physical server - vmware vm mahcines - containers.
+
+COE :: container orchestration engine - e.g kubernetes,docker swarm, apache mesos etc. - COE automes deploying,scaling and manageing containerized application on a group of servers.
+COE uses contianer runtime engines like rocket,docker etc.
+Features of COE :
+Primary features:
+Clustering :: it creates a master and worker nodes cluser.
+Scheduling :: Means we submit config file to COE and it finds the free node and deploy container.
+Other features :
+Scalibiltiy
+Load balancing
+Fault tolerance
+Deployment - Easy to follow deployment stratergies like blue green deployment,rolling update.
+
+
+Installation different ways ::
+-----------------------------
+i)Play-with-k8s
+https://labs.play-with-k8s.com/
+This is what when we don't want to install, we can get a preinstalled k8s online.
+
+ii) Minikube :: this is single node means both master and worker nodes are on one mahcine.
+
+iii) Kubeadm :: If we have sufficient resources or we can take sufficient vms on cloud.
+
+iv) Cloud based :: Google k8s engine(GKE), Amazon EKS, AKS (azure k8s service)
+
+
+i) Play-with-k8s -- Need a git or docker account. You can select maximum 8 nodes on it.
+See all commands in resources doc.
+
+ii) Minikube :: minikube makes it easy to run kubernetes locally.
+See detailed commands for below steps in resoruces.
+Downlaod & install virtualbox from virtualbox.org on your system.
+Download "minikube-windows-amd64" github location.
+Download “kubectl”
+Start minikube
+
+iii) GKE 
+GKE takes care of
+-creating vms
+- managing kubernetes master
+- ETCD
+- Container networking
+- Os Built for containers. Google proivde a container optimized OS.
+- Auto Scale (interms of cpu and memory increase/decrease based on loads)
+- Auto upgrade
+- Auto Repair
+- INtegrated Logging and Monitoring
+- Fully managed (google site engineers)
+
+Google cloud - home - scroll down kubernetes- select type standard - create cluster  
+
+
+
+iv) 1. Create VMs which are part of k8s cluster (master & worker nodes)
+2. Disable SELinux and swap on all nodes.
+3. Install Kubeadm, kubelet, kubectl and Docker on all nodes • Start and enable docker and kubelet on all nodes
+4. Initialize the master node
+5. Configure Pod network 
+6. Join worker nodes to the cluster
+
+
+KUbectl commands :: create ,get ,describe,delete,exec (to run commands inside a pod conatiner), log
+
+
+
+
+
+
+
+Pod creation using manifest file
+--------------------------------
+Pod is atomic unit of deployment in kubernetes.
+Pod is exposed to outside world using ports. VM IP:port is ip address for pod.
+Multicontinaer pods :: there can be a main + supporting contianer in a pod.
+Pod lifecycle :  pending - running - succeded
+                   |
+                 Failed
+Once a pod dies, it dies you can't recover instead you can start a new pod.
+
+
+Pod manifest has four parts:
+i)apiversion :
+v1 :- pod,replicationcountroller and service.
+apps/v1:- repicaset,deployment,daemonSet
+batch/v1 :- job
+ii)kind: pod or anyone of above.
+iii) metadata:
+name 
+labels //label is option but always give it as it makes filtering easy.
+iv) spec: containers
+   -name: 
+    image
+
+
+Creating a pod ::
+
+vi nginx-pod.yaml
+#nginx-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: nginx-pod
+ labels: 
+    app: nginx
+    tier: dev
+sepc:
+ containers:
+  -name: nginx-container
+   image: nginx
+
+
+kubectl create -f nginx-pod.yml  //to create pod
+kubectl get pod              //get pod status 
+kubectl get pod -o wide    //gives wide output for pod details and we can check pod is running on whcih node and its IP.
+Suppose we lost the config yml file for a pod, then we can recreate yml file from running pod ::
+kubectl get pod nginx-pod -o yaml  //to see pod configuration in yaml.
+kubectl describe pod nginx-pod  //display all detials and events of a pod, handy when we have to troubleshoot.
+
+Testing pod and logging into pod ::
+
+# To get inside the pod
+kubectl exec -it nginx-pod -- /bin/sh
+
+# Create test HTML page
+cat <<EOF > /usr/share/nginx/html/test.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Testing..</title>
+</head>
+<body>
+<h1 style="color:rgb(90,70,250);">Hello, Kubernetes...!</h1>
+<h2>Congratulations, you passed :-) </h2>
+</body>
+</html>
+EOF
+exit
+
+# Expose PODS using NodePort service, Nginx is running on port 80 on pod so we will expose pod port 80.
+kubectl expose pod nginx-pod --type=NodePort --port=80
+
+# Display Service and find NodePort  // to access nginx running inside pod we need port. Below command gives the port with Node port : 33750. It won't be port 80.
+kubectl describe svc nginx-pod
+
+# Open Web-browser and access webapge using 
+http://nodeip:nodeport/test.html    //here Node IP can be of master or any of the worker node. Nomatter if we have 3 worker nodes and pod is running only on onde node.
+http://nodeip_master:nodeport/test.html
+http://nodeip_worker1:noreport/test.html  or http://nodeip_worker1:33750/test.html
+http://nodeip_worker2:nodeport/test.html
+
+Now access the pod from ohter worker on master nodes ::
+GEt node port and IP (Endpoint) from below command by connecting to pod interactively.
+kubectl describe svc nginx-pod
+From master and all other workers node on which pod is not running run below command ::
+curl http://Endpoint:port/test.html e.g. curl http://10.240.4.6:80/test.html
+It will display file content in html form.
+
+# Delete pod & svc
+kubectl delete svc nginx-pod
+kubectl delete pod nginx-pod
+
+Once a pod dies, it dies you can't recover instead you can start a new pod.
+
+
+ConfigMaps and Secrets
+----------------------
+
+ConfigMaps :: With the help configmaps we manage the containers configuration in kubernetes, its a key value pair.
+
+They seperate container image from custom configurations. We will take an image + add our custom configuration(non-sensitive) from configmap and prepare our final pod container.
+We can display contents of configmaps while we can't display content of secrets.
+Configmaps are defined from-file(using a file) or from-leterals(directly on command line while creating configmap.
+Secrets :
+
+If there is sensitive data like username/password,tokens, ssh keys than that is stored in secrets.
+Secrets are used to store small sensitive data in pod manifest file reduces risk of exposing sensitive data.
+- created outside of pods.
+- stored inside ETCD database on k8s master.
+- Size not more than 1MB.
+- sent to target nodes only. Not like puppet ,anisbile where secret is broadcasted to all nodes.
+
+ConfigMaps and secrets can be mounted as volume to pod or passed as environment volume to Pod.
+
+Lab :: see the resources - ConfigMap
+Lap :: See the resources - Secrets
+
+
+Controllers
+-----------
+
+i) Replication Controller :: 
+-Ensures a specified number of pods are running at any time.
+- Replication controller(rc or rcs) and pods are associated with each other using Labels.
+- Creating a rc wit count 1 ensure that a pod is always available.
+
+- Advanteges :: High avaialbity and load balancing.
+
+- Replication controller are old and is replaced by REplicaSets.
+
+ii) ReplicaSet :
+-All the features are same as above to Replication controller except the one below :
+
+ReplicaSEt selectors are set-based-selectors while Replication controller use - equality-based-selector.
+
+Equality based selectors uses = , == , !=.   (simple to use)
+Set based selectors uses  in, notin exits.  (a bit comlex but more powerfull)
+
+e.g. 
+kubectl get pods -l environment=production
+kubectl get pods -l environment in (production,qa,dev)
+
+Eqaulity based selector supports old resources such as :: ReplicationControllers, Services.
+e.g
+select:
+app: nginx
+environment: production
+Set based selector support newer reosurces such as replicasets,deployments,jobs,daemonSet.
+e.g.
+selector:
+matchLabels:
+app: nginx
+environment: frontend
+matchexpressions: 
+-{key: environment, operator: In, values: [prod,qa,test]
+
+
+
+Matchlabels are used when there is single value for a key and  matchexpression are used when there are multiple values for a key.
+
+Lab : ReplicaSet in resources section.
+
+
+
+iii) Deployments
+
+Replica set doesn't support upgrade and rollback. So we use deployments. We use deployments instead pod or replicaSet as deployment allow us to define deployment strategy and ease of
+upgrade and rollback and also deployment creates replicaSet bydefault at backend.
+Features :
+Multiple replicas (If no value specified than it will take replica as 1,means 1 instance is always running.)
+-Deployment automatically creates a replica set in background and we can also query it using kubectl get rs -l app=nginx_app
+Upgrade
+Rollback
+Scale up or down
+Pause and resume
+
+--Deployment Types 
+Recreate  :: shutdown the existing version and recreate a new one. It has downtime.
+RollingUpdate (rampled/incremental) :: Default K8s deployment stratergy. In this instances are updated one by one. 
+Canary -- IN Canary if we have 10 instances, first we will update 2 and test. Once successfull we will update next 8 too. By this we can test new version before its fully deployed.
+Blue/Green -- In this equal number of instances in blue and green sets. After testing new version traffic is switched from old version to new using load balancing mechenism.
+
+
+
+DaemonSet 
+--------- 
+Overview 
+A DaemonSet ensures that all (or some) Nodes run a copy of a Pod.
+• As nodes are added to the cluster, Pods are added
+• As nodes are removed from the cluster, those Pods are garbage collected
+• Deleting a DaemonSet will clean up the Pods it created
+
+Use Cases
+• Storage daemons: Ex: ceph
+• Log collection daemons: Ex: fluentd
+• Node monitoring daemons: Ex: collectd 
+
+
+Jobs
+----
+a. Job is a Controller in k8s, which supervises Pods for carrying out certain tasks
+b. Run-to-completion (Jobs) and Scheduled jobs (CronJob or repeated jobs) 
+c. Run-to-completion are onetime job. 
+
+
+Service
+-------
+Why Service :
+How to give permanent IP address to pods.
+How do various components connect and communicate like webapp connect to backend database.
+How do applications are exposed to outside world.
+
+Services groups the pod running on a cluster and connects them togather.
+Types :
+cluster_ip,nodeport and laod balancer.
+
+i) NodePort Service
+
+NodePort service is used to expose your pod app to outside.
+It gives as static Node IP and pods are die and recreated and their IP is ephemeral.
+Secondly it gives a nodeport(30000 to 32767) so using node_ip:node_port outside world can access your app.
+
+- If we delete nodeport service, all pods goruped by this service will be deleted too.
+
+In server.yaml file we have three ports ::
+- nodeport : (30000 to 32767). This port is used to access app from outside world.
+- port : Service port
+- targetPort :  Target container port.
+
+//port and targetPort are same. If we don't give port it will take service port by default.
+
+We can access app using ::
+-http://Worker_node/Master_node external IP:nodeport.
+-http://Pod_ip:nodeport
+-http://Serivce_IP:nodeport or http://cluster_IP:nodeport //this is the most stable way.
+Service IP is also called cluster_IP.
+
+
+ii) LoadBalancer Service
+
+Load balancer is used when we have number of instances running on different different nodes. 
+It balances the load among different instances on nodes.
+Load balancer is expensive service as when we create load balancer service its IP is created by cloud provider on cloud, and one solution to this is ingress.
+
+We can access using :: http://loadbalancer_ip/test.html while with node external IP we have to give nodeport number.
+http://loadbalancer_ip:nodePort/test.html
+
+
+iii) Cluster IP 
+-Cluster IP are default service type in K8S.
+-By using cluster IP frontend pods access the backend pods(which are not exposed to outside world e.g. backend database)
+
+Lab :: This lab(guestbook) contains all cluster IP as well as load balancer and connect application to backed reddis database. 
+
+
+Storage
+-------
+
+-Volume are just a directory accessbile to containers in a pod.
+-Pods are ephemeral and stateless so volume bring persistence to pods.
+-k8s volume are much more matured and robust as compared to docker volume.
+
+Volumes Types ::
+Ephemeral - Same lifecycle as pods, means these volumne are created with pod creation and dies as pod dies.
+Durabe :: Durable volume exists even if pod dies. These volume is reffered to new pod so they can reuse data in volumes.
+
+K8S volume uses ::
+awsElasticBlockStore
+azureDisk
+azureFile
+configMap
+emptyDir
+gcePersistentDisk
+hostPath
+persistenVolumeClaim
+secret
+iscsi
+vspehereVolume and a lot more.
+
+i) EmptyDir : 
+-creates empty directory first when a pod is assigned to a node.
+-EmptyDir volume stays as long as pod is running
+-Once pod is removed from a ndoe, emptyDir is deleted forever.
+
+Use cases - To be used as Temporary space.
+
+ii) HostPath :
+-mounts a file or directory from host node's filesystem into your pod.
+- mounts exist even after pod is terminated.
+-Similar to docker volume.
+-Only All pods on same worker node can get this volume. 
+Cons :
+Should be used very catiously as if there are many contianers or multiple nodes than each node is having its own
+mount point and all contianers in that node will share that mount point but the contianer on other nodes will use their own node's mount point.
+So on multinodes this mount point is not in sync. So use it only if very necessary.
+
+
+iii) GCE PersistentDsik :
+
+gcePersistentDisk
+• Volume mounts a Google Compute Engine (GCE) Persistent Disk into Pod
+• Volume data is persisted even after pods termination
+Only one node can read-write to GCE Persistent disk and rest nodes has read-only access to it.
+Restrictions:  
+• Read-Write only on one node and Read-Only on many nodes
+• You must create a PD using gcloud or the GCE API or UI before you can use it
+• Nodes on which Pods are running must be GCE VMs
+• VMs need to be in the same GCE project and zone as the PD
+
+//ly on Azure cloud we can use azure disk/file and on aws we can use awsEBS with same restrictions.
+
+Lab : In Lab we are creating GCE PersistenDisk on GKE cluster. WE can also use GCE PersistentDisk with the cluster we created using kubeadm, but with kubeadm vm we have to manaully attach
+PersistenDisk to google VMs.
+
+
+iv) Persistent Volume(PV) and Persistent volume claim(PVC) ::
+
+We have always mutliple stroage types in our infra like SSD,HHD,NFS etc. so we have to get plugin for all storage types, which is cumbersome so 
+we use PV and PVC as a single storage interface to deal with all stroage types.
+
+PV :: Its a preprovisioned piece of strogae.
+PVC :: Reqeust for storage.
+
+Provisoning ::
+Static :: PV (piece of storage) is created before PVC reqeust. 
+Dynamic : PV is created at same time of PVC.
+
+Static Provisioning :: 
+
+IN this admin creates chunks of storage and when there is request for storage(PVC) than mathcing chunk is assigned to PVC.
+If mathcing size chunk or somewhat bigger chunk than mathcing size is not present than PVC has to wait to bind.
+
+Steps ::
+- Create a persistent disk on cloud.
+- Create Persistent volume(PV) 
+- Create persistent volume reqeust. PVC recognises PV using storage class which can be slow(HDD), fast(SSD) etc.
+- Reference PVC in pod.
+
+
+Dynamic Provisioning ::
+
+In this we use register storage class. No need to create Persistent volumes in advance.
+They are created parallely when there is a PVC reqeust.
+
+We can create classes of storage based on speed (fast,medium,slow) or type of storage.
+Its like giving a tag to different storage types.
+
+
+- Create storage class
+- Create PVC to reqeust storage and it will create persistent volume(PV) disk parallely and bound PV to PVC,  which you can see on cloud interface in disks section.
+- Reference claim in pod
+
+To delete all ::
+- Delete pod
+- Delete PVC
+- Delete Storage class
+- Lastly the disks created on cloud we have to delete manually by logging to google cloud and go to Disks.
+
+
+
+
+
+
+
+
+
+
+
